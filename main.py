@@ -3,6 +3,220 @@ import math
 import numpy as np
 
 
+#Kmeans image clustering
+def kmeans_segment(img,k):
+    # K = number of clusters
+    # original image dimensions
+    m = img.shape[0]
+    n = img.shape[1]
+
+
+    # converting image to 2D array
+    img = img.reshape((-1, 3))
+    # converting to np.float32
+    img = np.float32(img)
+    max_iterations = 15
+
+    # random initialization of centroids
+    centroids = np.random.randint(0, 255, size=(k, 3))
+    # assign each pixel to a cluster
+    clusters = np.zeros(img.shape[0], dtype=np.uint8)
+    center_changed = True
+    iteration = 0
+    while center_changed and iteration < max_iterations:
+        center_changed = False
+        iteration += 1
+        for i in range(img.shape[0]):
+            distances = np.zeros(k)
+            for j in range(k):
+                distances[j] = np.linalg.norm(img[i] - centroids[j])
+            cluster = np.argmin(distances)
+            if clusters[i] != cluster:
+                clusters[i] = cluster
+                center_changed = True
+        for i in range(k):
+            centroids[i] = np.mean(img[clusters == i], axis=0)
+    # assign each pixel to the cluster it belongs to
+    segmented_img = np.zeros(img.shape, dtype=np.uint8)
+    for i in range(img.shape[0]):
+        segmented_img[i] = centroids[clusters[i]]
+    # convert back to uint8
+    segmented_img = np.uint8(segmented_img)
+    # reshape back to the original image dimension
+    segmented_img = segmented_img.reshape((m, n, 3))
+    return segmented_img
+
+# Connected Component Labeling
+def ConnectedComponentLabeling(image):
+    # get image size
+    (h, w) = image.shape[:2]
+    # create new image
+    new_image = np.zeros(image.shape)
+    # create label
+    label = 1
+    # create dictionary
+    dictionary = {}
+    # connected component labeling
+    for i in range(0, h):
+        for j in range(0, w):
+            if image[i][j] != 0:
+                # check left and up neighbor
+                left = image[i][j - 1]
+                up = image[i - 1][j]
+                if left == 0 and up == 0:
+                    # create new label
+                    dictionary[label] = label
+                    new_image[i][j] = label
+                    label += 1
+                elif left != 0 and up == 0:
+                    # assign left label
+                    new_image[i][j] = left
+                elif left == 0 and up != 0:
+                    # assign up label
+                    new_image[i][j] = up
+                else:
+                    # assign min label
+                    new_image[i][j] = min(left, up)
+                    # update dictionary
+                    dictionary[max(left, up)] = min(left, up)
+    # update label
+    for i in range(0, h):
+        for j in range(0, w):
+            if new_image[i][j] != 0:
+                new_image[i][j] = dictionary[new_image[i][j]]
+    return new_image
+
+# Region Growing Algorithm
+def RegionGrowing(image,seed_count,threshold):
+    # get image size
+    (h, w) = image.shape[:2]
+    # create new image
+    new_image = np.zeros(image.shape)
+    # create seed
+    seed = np.zeros(image.shape)
+    # create queue
+    queue = []
+    # create label
+    label = 1
+    # create dictionary
+    dictionary = {}
+    # create seed
+    for i in range(0, seed_count):
+        # get random seed
+        x = np.random.randint(0, h)
+        y = np.random.randint(0, w)
+        # add seed to queue
+        queue.append((x, y))
+        # add seed to dictionary
+        dictionary[(x, y)] = label
+        # add seed to seed
+        seed[x][y] = 255
+        # add label
+        label += 1
+    # region growing
+    while len(queue) != 0:
+        # get current pixel
+        (x, y) = queue.pop(0)
+        # get current label
+        current_label = dictionary[(x, y)]
+        # get current pixel value
+        current_value = image[x][y]
+        # check left neighbor
+        if y - 1 >= 0:
+            # get left neighbor value
+            left_value = image[x][y - 1]
+            # check threshold
+            if abs(current_value - left_value) < threshold:
+                # check left neighbor label
+                if (x, y - 1) not in dictionary:
+                    # add left neighbor to queue
+                    queue.append((x, y - 1))
+                    # add left neighbor to dictionary
+                    dictionary[(x, y - 1)] = current_label
+                    # add left neighbor to seed
+                    seed[x][y - 1] = 255
+        # check right neighbor
+        if y + 1 < w:
+            # get right neighbor value
+            right_value = image[x][y + 1]
+            # check threshold
+            if abs(current_value - right_value) < threshold:
+                # check right neighbor label
+                if (x, y + 1) not in dictionary:
+                    # add right neighbor to queue
+                    queue.append((x, y + 1))
+                    # add right neighbor to dictionary
+                    dictionary[(x, y + 1)] = current_label
+                    # add right neighbor to seed
+                    seed[x][y + 1] = 255
+        # check up neighbor
+        if x - 1 >= 0:
+            # get up neighbor value
+            up_value = image[x - 1][y]
+            # check threshold
+            if abs(current_value - up_value) < threshold:
+                # check up neighbor label
+                if (x - 1, y) not in dictionary:
+                    # add up neighbor to queue
+                    queue.append((x - 1, y))
+                    # add up neighbor to dictionary
+                    dictionary[(x - 1, y)] = current_label
+                    # add up neighbor to seed
+                    seed[x - 1][y] = 255
+        # check down neighbor
+        if x + 1 < h:
+            # get down neighbor value
+            down_value = image[x + 1][y]
+            # check threshold
+            if abs(current_value - down_value) < threshold:
+                # check down neighbor label
+                if (x + 1, y) not in dictionary:
+                    # add down neighbor to queue
+                    queue.append((x + 1, y))
+                    # add down neighbor to dictionary
+                    dictionary[(x + 1, y)] = current_label
+                    # add down neighbor to seed
+                    seed[x + 1][y] = 255
+    # update label
+    for i in range(0, h):
+        for j in range(0, w):
+            if seed[i][j] != 0:
+                new_image[i][j] = dictionary[(i, j)]
+    return new_image
+
+
+
+def split(img,Threshold):
+    h = img.shape[0]
+    w = img.shape[1]
+    segments = []
+    if np.max(img) - np.min(img) > Threshold:
+        segments.append(img[0:h//2,0:w//2])
+        segments.append(img[0:h//2,w//2:])
+        segments.append(img[h//2:,0:w//2])
+        segments.append(img[h//2:,w//2:])
+    else:
+        segments.append(img)
+    return segments
+
+def MergeSegments(segments,threshold):
+    # merge segments based on similarity
+    # if after merging the range of the merged segment is less than threshold, merge the segments
+    # else return the segments
+    if len(segments) == 1:
+        return segments
+    else:
+        merged_segments = []
+        for i in range(0,len(segments),2):
+            if i+1 < len(segments):
+                if np.max(segments[i]) - np.min(segments[i]) < threshold and np.max(segments[i+1]) - np.min(segments[i+1]) < threshold:
+                    merged_segments.append(np.concatenate((segments[i],segments[i+1]),axis=1))
+                else:
+                    merged_segments.append(segments[i])
+                    merged_segments.append(segments[i+1])
+            else:
+                merged_segments.append(segments[i])
+        return MergeSegments(merged_segments,threshold)
 
 # Guassian Filter
 def GuassianFilter(image, kernel_size, sigma):
