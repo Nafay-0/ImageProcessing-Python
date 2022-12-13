@@ -149,6 +149,19 @@ def ConnectedComponentLabeling(image):
                 new_image[i][j] = dictionary[new_image[i][j]]
     return new_image
 
+#HSV Segmentation
+def HSVSegmentation(image):
+    # convert image to HSV
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    # define range of blue color in HSV
+    lower_blue = np.array([110, 50, 50])
+    upper_blue = np.array([130, 255, 255])
+    # Threshold the HSV image to get only blue colors
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)
+    # Bitwise-AND mask and original image
+    res = cv2.bitwise_and(image, image, mask=mask)
+    return res
+
 # Region Growing Algorithm
 def RegionGrowing(image,seed_count,threshold):
     # get image size
@@ -536,19 +549,25 @@ def detectCircle(image):
 
 def detectLine(image):
     # parametric equation of line
-    # y = mx + c
-    # slope range : -100 -> 100
-    # intercept range : 0 -> 100
-    threshold = 0.7
-    for m in range(-100, 100):
-        for c in range(0, 100):
-            count = 0
-            for x in range(0, image.shape[0]):
-                y = m * x + c
-                if image[x][y] == 255:
-                    count += 1
-            if count / image.shape[0] > threshold:
-                print("Line detected at: ", m, c)
+    # p = x*cos(theta) + y*sin(theta)
+    # theta range : 0 - 360
+    accumulator = np.zeros((image.shape[0]+image.shape[1], 360))
+    for x in range(0, image.shape[1]):
+        for y in range(0, image.shape[0]):
+            if image[y][x] == 255:
+                for theta in range(0, 360):
+                    p = x * math.cos(theta) + y * math.sin(theta)
+                    accumulator[int(p)][theta] += 1
+    for theta in range(0, 360):
+        for p in range(0, image.shape[0]+image.shape[1]):
+            if accumulator[p][theta] > 100:
+                print("Line detected at: ", p, theta)
+                for x in range(0, image.shape[1]):
+                    y = (p - x * math.cos(theta)) / math.sin(theta)
+                    image[y][x] = 255
+    return image
+
+
 
 
 def ScaleImage(image, X, Y):
