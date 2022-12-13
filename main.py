@@ -3,6 +3,69 @@ import math
 import numpy as np
 
 
+# Huffman Coding
+def HuffmanCoding(image):
+    # get image size
+    (h, w) = image.shape[:2]
+    # create dictionary
+    dictionary = {}
+    # create histogram
+    for i in range(0, h):
+        for j in range(0, w):
+            if image[i][j] in dictionary:
+                dictionary[image[i][j]] += 1
+            else:
+                dictionary[image[i][j]] = 1
+    # sort dictionary
+    dictionary = sorted(dictionary.items(), key=lambda x: x[1])
+    # create tree
+    while len(dictionary) > 1:
+        # get two smallest elements
+        left = dictionary[0]
+        right = dictionary[1]
+        # create new node
+        node = (left[0] + right[0], left[1] + right[1])
+        # remove two smallest elements
+        dictionary = dictionary[2:]
+        # insert new node
+        dictionary.append(node)
+        # sort dictionary
+        dictionary = sorted(dictionary, key=lambda x: x[1])
+    # create code
+    code = {}
+    # create code for each element
+    for i in range(0, h):
+        for j in range(0, w):
+            if image[i][j] not in code:
+                code[image[i][j]] = ''
+                # get code
+                node = dictionary[0]
+                while image[i][j] not in node[0]:
+                    if image[i][j] in node[0][0]:
+                        code[image[i][j]] += '0'
+                        node = node[0][0]
+                    else:
+                        code[image[i][j]] += '1'
+                        node = node[0][1]
+    return code
+
+
+# Run Length Encoding
+def RunLengthEncoding(image):
+    code = []
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            if len(code) == 0:
+                code.append([image[i][j], 1])
+            else:
+                if image[i][j] == code[-1][0]:
+                    code[-1][1] += 1
+                else:
+                    code.append([image[i][j], 1])
+    return code
+
+
+
 #Kmeans image clustering
 def kmeans_segment(img,k):
     # K = number of clusters
