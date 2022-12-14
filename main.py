@@ -489,6 +489,24 @@ def IOU(box1, box2):
     return iou
 
 
+#Non-Maximum Suppression
+def nms(boxes, scores, threshold):
+    # boxes: (x1, y1, x2, y2)
+    # scores: (score)
+    # threshold: threshold of IOU
+    # sort boxes by scores
+    order = scores.argsort()[::-1]
+    keep = []
+    while order.size > 0:
+        i = order[0]
+        keep.append(i)
+        # calculate IOU
+        iou = np.array([IOU(boxes[i], boxes[j]) for j in order[1:]])
+        # delete boxes with IOU > threshold
+        inds = np.where(iou <= threshold)[0]
+        order = order[inds + 1]
+    return keep
+
 # Interpolation
 def BilinearInterpolation(image,new_size):
     rows, cols = image.shape
@@ -566,8 +584,6 @@ def detectLine(image):
                     y = (p - x * math.cos(theta)) / math.sin(theta)
                     image[y][x] = 255
     return image
-
-
 
 
 def ScaleImage(image, X, Y):
