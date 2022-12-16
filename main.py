@@ -2,6 +2,21 @@ import cv2
 import math
 import numpy as np
 
+# salt and pepper noise
+def add_noise(img, percentage):
+    pixels = img.shape[0] * img.shape[1]
+    num_pixels = int(pixels * percentage)
+    noisy_img = np.zeros(img.shape, dtype=np.uint8)
+    noisy_img[:, :] = img[:, :]
+    for i in range(num_pixels//2):
+        x = np.random.randint(0, img.shape[0])
+        y = np.random.randint(0, img.shape[1])
+        noisy_img[x, y] = 255
+    for i in range(num_pixels//2):
+        x = np.random.randint(0, img.shape[0])
+        y = np.random.randint(0, img.shape[1])
+        noisy_img[x, y] = 0
+    return noisy_img
 
 # Huffman Coding
 def HuffmanCoding(image):
@@ -611,6 +626,21 @@ def rotateImage(image, angle):
     return rotated
 
 
+def PerspectiveTransform(image, pts1, pts2):
+    # get perspective transformation matrix
+    M = cv2.getPerspectiveTransform(pts1, pts2)
+    # apply perspective transformation
+    res_image = cv2.warpPerspective(image, M, (image.shape[0], image.shape[1]))
+    return res_image
+
+def AffineTransform(image, pts1, pts2):
+    # get affine transformation matrix
+    M = cv2.getAffineTransform(pts1, pts2)
+    # apply affine transformation
+    res_image = cv2.warpAffine(image, M, (image.shape[0], image.shape[1]))
+    return res_image
+
+
 def TrainLogisticRegression(X, Y):
     # X: input features as vector
     # Y: output labels as vector
@@ -641,6 +671,12 @@ def SURFFeatures(image):
     keypoints, descriptors = surf.detectAndCompute(image, None)
     return keypoints, descriptors
 
+
+def ORBFeatures(image):
+    # orb features
+    orb = cv2.ORB_create()
+    keypoints, descriptors = orb.detectAndCompute(image, None)
+    return keypoints, descriptors
 
 def TrainSVM(X, Y):
     # X: input features as vector
